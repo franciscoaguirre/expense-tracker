@@ -1,4 +1,13 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:path/path.dart' as path_lib;
+import 'package:sqflite/sqflite.dart';
+import 'package:path_provider/path_provider.dart';
+
+import 'data_input_form.dart';
+import 'expenses_list.dart';
+import 'expense.dart';
 
 void main() {
   runApp(const MyApp());
@@ -55,16 +64,59 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+  List<Expense> _expenses = [];
+  bool _isLoading = false;
 
-  void _incrementCounter() {
+  @override
+  void initState() {
+    super.initState();
+    loadData();
+  }
+
+  _getDatabasePath() async {
+    Directory documentsDirectory = await getApplicationDocumentsDirectory();
+    String path = path_lib.join(documentsDirectory.toString(), 'expenses.db');
+    return path;
+  }
+
+  _onCreate(Database db, int version) async {
+    await db.execute('''
+      CREATE TABLE expenses (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        date TEXT,
+        name TEXT,
+        category TEXT,
+        amount REAL
+      )
+    ''');
+  }
+
+  void loadData() async {
     setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
+      _isLoading = true;
+    });
+    final db = await openDatabase(await _getDatabasePath(),
+        version: 1, onCreate: _onCreate);
+    final List<Map<String, dynamic>> maps = await db.query('expenses');
+    setState(() {
+      _expenses = maps.map((expense) => Expense.fromMap(expense)).toList();
+      _isLoading = false;
+    });
+  }
+
+  void _addExpense() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => DataInputForm(onAdd: loadData)),
+    );
+  }
+
+  void _handleDelete(int id) async {
+    final db = await openDatabase(await _getDatabasePath(),
+        version: 1, onCreate: _onCreate);
+    await db.delete('expenses', where: 'id = ?', whereArgs: [id]);
+    setState(() {
+      _expenses.removeWhere((expense) => expense.id == id);
     });
   }
 
@@ -95,13 +147,13 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
         ),
         floatingActionButton: FloatingActionButton(
-          onPressed: _incrementCounter,
+          onPressed: _addExpense,
           tooltip: 'Increment',
           child: const Icon(Icons.add),
         ), // This trailing comma makes auto-formatting nicer for build methods.
-        body: const TabBarView(
+        body: TabBarView(
           children: [
-            Center(
+            const Center(
               // Center is a layout widget. It takes a single child and positions it
               // in the middle of the parent.
               child: Column(
@@ -127,7 +179,11 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
             ),
             Center(
-              child: Text('List of expenses'),
+              child: ExpensesListView(
+                expenses: _expenses,
+                isLoading: _isLoading,
+                onDelete: _handleDelete,
+              ),
             ),
           ],
         ),
