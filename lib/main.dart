@@ -1,14 +1,11 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
-import 'package:path/path.dart' as path_lib;
-import 'package:sqflite/sqflite.dart';
-import 'package:path_provider/path_provider.dart';
 
+import 'database.dart';
 import 'data_input_form.dart';
 import 'expenses_list.dart';
 import 'expense.dart';
 import 'pie_chart.dart';
+import 'csv_utils.dart';
 
 void main() {
   runApp(const MyApp());
@@ -64,6 +61,20 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
+enum MenuOption { exportData, importData }
+
+void onSelectedMenuOption(MenuOption option, Function() callback) async {
+  switch (option) {
+    case MenuOption.exportData:
+      exportExpensesToCSV();
+      break;
+    case MenuOption.importData:
+      await importExpensesFromCSV();
+      await callback();
+      break;
+  }
+}
+
 class _MyHomePageState extends State<MyHomePage> {
   List<Expense> _expenses = [];
   bool _isLoading = false;
@@ -74,30 +85,11 @@ class _MyHomePageState extends State<MyHomePage> {
     loadData();
   }
 
-  _getDatabasePath() async {
-    Directory documentsDirectory = await getApplicationDocumentsDirectory();
-    String path = path_lib.join(documentsDirectory.toString(), 'expenses.db');
-    return path;
-  }
-
-  _onCreate(Database db, int version) async {
-    await db.execute('''
-      CREATE TABLE expenses (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        date TEXT,
-        name TEXT,
-        category TEXT,
-        amount REAL
-      )
-    ''');
-  }
-
   void loadData() async {
     setState(() {
       _isLoading = true;
     });
-    final db = await openDatabase(await _getDatabasePath(),
-        version: 1, onCreate: _onCreate);
+    final db = await openDatabase();
     final List<Map<String, dynamic>> maps = await db.query('expenses');
     setState(() {
       _expenses = maps.map((expense) => Expense.fromMap(expense)).toList();
@@ -113,8 +105,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _handleDelete(int id) async {
-    final db = await openDatabase(await _getDatabasePath(),
-        version: 1, onCreate: _onCreate);
+    final db = await openDatabase();
     await db.delete('expenses', where: 'id = ?', whereArgs: [id]);
     setState(() {
       _expenses.removeWhere((expense) => expense.id == id);
@@ -140,6 +131,23 @@ class _MyHomePageState extends State<MyHomePage> {
           // Here we take the value from the MyHomePage object that was created by
           // the App.build method, and use it to set our appbar title.
           title: Text(widget.title),
+          actions: <Widget>[
+            PopupMenuButton<MenuOption>(
+              onSelected: (menuOption) =>
+                  onSelectedMenuOption(menuOption, loadData),
+              itemBuilder: (BuildContext context) =>
+                  <PopupMenuEntry<MenuOption>>[
+                const PopupMenuItem<MenuOption>(
+                  value: MenuOption.exportData,
+                  child: Text("Export Data"),
+                ),
+                const PopupMenuItem<MenuOption>(
+                  value: MenuOption.importData,
+                  child: Text("Import Data"),
+                ),
+              ],
+            ),
+          ],
           bottom: const TabBar(
             tabs: [
               Tab(icon: Icon(Icons.bar_chart)),
