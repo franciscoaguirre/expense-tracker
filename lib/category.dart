@@ -1,12 +1,12 @@
 import 'package:sqflite/sqflite.dart' as sqflite;
 
 class Category {
-  final int? id; // Optional; for database reference
+  final int id;
   final String name;
   final int color;
 
   Category({
-    this.id,
+    required this.id,
     required this.name,
     required this.color,
   });
