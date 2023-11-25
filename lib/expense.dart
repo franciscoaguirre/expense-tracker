@@ -1,3 +1,5 @@
+import 'expense_with_category.dart';
+
 class Expense {
   final int? id; // Optional; for database reference
   final DateTime date;
@@ -20,6 +22,17 @@ class Expense {
       name: map['name'],
       categoryId: map['category_id'],
       amount: map['amount'],
+    );
+  }
+
+  factory Expense.fromExpenseWithCategory(
+      ExpenseWithCategory expenseWithCategory) {
+    return Expense(
+      id: expenseWithCategory.id,
+      date: expenseWithCategory.date,
+      name: expenseWithCategory.name,
+      categoryId: expenseWithCategory.categoryId,
+      amount: expenseWithCategory.amount,
     );
   }
 

@@ -101,7 +101,17 @@ class _MyHomePageState extends State<MyHomePage> {
   void _addExpense() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => DataInputForm(onAdd: loadData)),
+      MaterialPageRoute(
+          builder: (context) => DataInputForm(onSubmit: loadData)),
+    );
+  }
+
+  void _editExpense(Expense expense) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+          builder: (context) =>
+              DataInputForm(onSubmit: loadData, expenseToEdit: expense)),
     );
   }
 
@@ -177,6 +187,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 expenses: _expenses,
                 isLoading: _isLoading,
                 onDelete: _handleDelete,
+                onEdit: _editExpense,
               ),
             ),
           ],

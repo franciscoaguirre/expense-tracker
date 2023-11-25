@@ -6,8 +6,13 @@ import 'expense_with_category.dart';
 class ExpenseCard extends StatelessWidget {
   final ExpenseWithCategory expense;
   final Function() onDelete;
+  final Function() onEdit;
 
-  const ExpenseCard({super.key, required this.expense, required this.onDelete});
+  const ExpenseCard(
+      {super.key,
+      required this.expense,
+      required this.onDelete,
+      required this.onEdit});
 
   @override
   Widget build(BuildContext context) {
@@ -27,6 +32,7 @@ class ExpenseCard extends StatelessWidget {
               ],
             ),
             const Spacer(),
+            IconButton(icon: const Icon(Icons.edit), onPressed: onEdit),
             IconButton(icon: const Icon(Icons.delete), onPressed: onDelete),
           ],
         ),
