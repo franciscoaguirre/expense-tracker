@@ -1,11 +1,9 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
-import 'package:path/path.dart' as path_lib;
-import 'package:sqflite/sqflite.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:sqflite/sqflite.dart' as sqflite;
 
 import 'date_picker_form_field.dart';
+import 'database.dart';
+import 'category.dart';
 
 class DataInputForm extends StatefulWidget {
   final Function() onAdd;
@@ -21,18 +19,10 @@ class DataInputFormState extends State<DataInputForm> {
   final amountController = TextEditingController();
   DateTime selectedDate = DateTime.now();
 
-  final List<String> categories = [
-    'Accomodation',
-    'Transportation',
-    'Restaurants',
-    'Groceries',
-    'Drugstore',
-    'Entertainment',
-    'Other',
-  ];
-  String? selectedCategory;
+  int? selectedCategory;
 
-  Database? db;
+  List<Category> categories = [];
+  late sqflite.Database db;
 
   @override
   void initState() {
@@ -42,41 +32,23 @@ class DataInputFormState extends State<DataInputForm> {
 
   @override
   void dispose() {
-    db?.close();
+    db.close();
     super.dispose();
   }
 
-  _getDatabasePath() async {
-    Directory documentsDirectory = await getApplicationDocumentsDirectory();
-    String path = path_lib.join(documentsDirectory.toString(), 'expenses.db');
-    return path;
-  }
-
   _initDatabase() async {
-    String path = await _getDatabasePath();
-    db = await openDatabase(path, version: 1, onCreate: _onCreate);
-  }
-
-  _onCreate(Database db, int version) async {
-    await db.execute('''
-      CREATE TABLE expenses (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        date TEXT,
-        name TEXT,
-        category TEXT,
-        amount REAL
-      )
-    ''');
+    db = await openDatabase();
+    categories = await getCategories(db);
   }
 
   void _submitData() async {
     Map<String, dynamic> expense = {
       'date': selectedDate.toIso8601String(),
       'name': nameController.text,
-      'category': selectedCategory,
+      'category_id': selectedCategory,
       'amount': double.parse(amountController.text),
     };
-    await db?.insert('expenses', expense);
+    await db.insert('expenses', expense);
 
     nameController.clear();
     amountController.clear();
@@ -114,7 +86,7 @@ class DataInputFormState extends State<DataInputForm> {
               decoration: const InputDecoration(labelText: 'Name'),
             ),
             // Category Dropdown
-            DropdownButtonFormField<String>(
+            DropdownButtonFormField<int>(
               isExpanded: true,
               value: selectedCategory,
               hint: const Text('Category'),
@@ -123,10 +95,10 @@ class DataInputFormState extends State<DataInputForm> {
                   selectedCategory = newValue;
                 });
               },
-              items: categories.map<DropdownMenuItem<String>>((String value) {
-                return DropdownMenuItem<String>(
-                  value: value,
-                  child: Text(value),
+              items: categories.map<DropdownMenuItem<int>>((Category value) {
+                return DropdownMenuItem<int>(
+                  value: value.id,
+                  child: Text(value.name),
                 );
               }).toList(),
             ),

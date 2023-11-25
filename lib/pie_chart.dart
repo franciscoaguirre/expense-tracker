@@ -1,20 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'dart:math';
 
-import 'expense.dart';
-
-Color getRandomColor() {
-  Random random = Random();
-  // Generate a random RGB color
-  int r = random.nextInt(256); // Red value between 0 and 255
-  int g = random.nextInt(256); // Green value between 0 and 255
-  int b = random.nextInt(256); // Blue value between 0 and 255
-  return Color.fromRGBO(r, g, b, 1); // Alpha is set to 1 for full opacity
-}
+import 'expense_with_category.dart';
 
 class PieChartView extends StatelessWidget {
-  final List<Expense> expenses;
+  final List<ExpenseWithCategory> expenses;
   final bool isLoading;
 
   const PieChartView({
@@ -29,25 +19,41 @@ class PieChartView extends StatelessWidget {
       return const Center(child: CircularProgressIndicator());
     }
 
-    final Map<String, double> amountPerCategory = {};
+    final Map<String, CategoryWithAmount> amountPerCategory = {};
     for (var expense in expenses) {
-      amountPerCategory[expense.category] =
-          (amountPerCategory[expense.category] ?? 0.0) + expense.amount;
+      amountPerCategory[expense.categoryName] = CategoryWithAmount(
+        name: expense.categoryName,
+        amount: (amountPerCategory[expense.categoryName]?.amount ?? 0.0) +
+            expense.amount,
+        color: expense.categoryColor,
+      );
     }
 
     return PieChart(
       PieChartData(
         sections: amountPerCategory
-            .map((category, amount) => MapEntry(
-                category,
+            .map((categoryName, category) => MapEntry(
+                categoryName,
                 PieChartSectionData(
-                  value: amount,
-                  title: category,
-                  color: getRandomColor(),
+                  value: category.amount,
+                  title: categoryName,
+                  color: Color(category.color),
                 )))
             .values
             .toList(),
       ),
     );
   }
+}
+
+class CategoryWithAmount {
+  final String name;
+  final double amount;
+  final int color;
+
+  CategoryWithAmount({
+    required this.name,
+    required this.amount,
+    required this.color,
+  });
 }

@@ -4,6 +4,7 @@ import 'database.dart';
 import 'data_input_form.dart';
 import 'expenses_list.dart';
 import 'expense.dart';
+import 'expense_with_category.dart';
 import 'pie_chart.dart';
 import 'csv_utils.dart';
 
@@ -76,7 +77,7 @@ void onSelectedMenuOption(MenuOption option, Function() callback) async {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  List<Expense> _expenses = [];
+  List<ExpenseWithCategory> _expenses = [];
   bool _isLoading = false;
 
   @override
@@ -89,10 +90,10 @@ class _MyHomePageState extends State<MyHomePage> {
     setState(() {
       _isLoading = true;
     });
-    final db = await openDatabase();
-    final List<Map<String, dynamic>> maps = await db.query('expenses');
+    final List<ExpenseWithCategory> expensesWithCategories =
+        await getExpensesWithCategories();
     setState(() {
-      _expenses = maps.map((expense) => Expense.fromMap(expense)).toList();
+      _expenses = expensesWithCategories;
       _isLoading = false;
     });
   }

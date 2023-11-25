@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
-import 'expense.dart';
+import 'expense_with_category.dart';
 import 'expense_card.dart';
 
 class ExpensesListView extends StatelessWidget {
-  final List<Expense> expenses;
+  final List<ExpenseWithCategory> expenses;
   final Function(int) onDelete;
   final bool isLoading;
 
@@ -30,7 +30,7 @@ class ExpensesListView extends StatelessWidget {
         return ExpenseCard(
           expense: expenses[index],
           onDelete: () {
-            onDelete(expenses[index].id!);
+            onDelete(expenses[index].id);
           },
         );
       },

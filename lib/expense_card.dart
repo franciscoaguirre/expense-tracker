@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import 'expense.dart';
+import 'expense_with_category.dart';
 
 class ExpenseCard extends StatelessWidget {
-  final Expense expense;
+  final ExpenseWithCategory expense;
   final Function() onDelete;
 
   const ExpenseCard({super.key, required this.expense, required this.onDelete});
@@ -22,7 +22,7 @@ class ExpenseCard extends StatelessWidget {
               children: <Widget>[
                 Text('Date: $formattedDate'),
                 Text('Name: ${expense.name}'),
-                Text('Category: ${expense.category}'),
+                Text('Category: ${expense.categoryName}'),
                 Text('Amount: ${expense.amount}'),
               ],
             ),

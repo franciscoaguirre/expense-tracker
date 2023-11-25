@@ -8,8 +8,8 @@ import 'package:path_provider/path_provider.dart';
 Future<sqflite.Database> openDatabase() async {
   return sqflite.openDatabase(
     await _getDatabasePath(),
-    version: 1,
     onCreate: _onCreate,
+    version: 1,
   );
 }
 
@@ -21,12 +21,20 @@ _getDatabasePath() async {
 
 _onCreate(sqflite.Database db, int version) async {
   await db.execute('''
+    CREATE TABLE categories (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT UNIQUE,
+      color INTEGER
+    )
+  ''');
+  await db.execute('''
     CREATE TABLE expenses (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       date TEXT,
       name TEXT,
-      category TEXT,
-      amount REAL
+      category_id INTEGER,
+      amount REAL,
+      FOREIGN KEY (category_id) REFERENCES category(id)
     )
   ''');
 }
