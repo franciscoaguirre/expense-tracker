@@ -1,5 +1,7 @@
 import 'package:sqflite/sqflite.dart' as sqflite;
 
+import 'database.dart';
+
 class Category {
   final int id;
   final String name;
@@ -33,8 +35,9 @@ class Category {
   }
 }
 
-Future<List<Category>> getCategories(sqflite.Database db) async {
+Future<List<Category>> getCategories(sqflite.Database? db) async {
+  final actualDb = db ?? await openDatabase();
   final List<Map<String, dynamic>> results =
-      await db.query('categories', columns: ['id', 'name', 'color']);
+      await actualDb.query('categories', columns: ['id', 'name', 'color']);
   return results.map((map) => Category.fromMap(map)).toList();
 }

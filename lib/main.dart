@@ -7,7 +7,9 @@ import 'expense.dart';
 import 'expense_with_category.dart';
 import 'pie_chart.dart';
 import 'csv_utils.dart';
+import 'category.dart';
 import 'category_form.dart';
+import 'categories_list.dart';
 
 void main() {
   runApp(const MyApp());
@@ -77,14 +79,18 @@ void onSelectedMenuOption(MenuOption option, Function() callback) async {
   }
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _MyHomePageState extends State<MyHomePage>
+    with SingleTickerProviderStateMixin {
   List<ExpenseWithCategory> _expenses = [];
+  List<Category> _categories = [];
   bool _isLoading = false;
   bool showingAdditionalActionButtons = false;
+  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(vsync: this, length: 3);
     loadData();
   }
 
@@ -92,10 +98,13 @@ class _MyHomePageState extends State<MyHomePage> {
     setState(() {
       _isLoading = true;
     });
+
     final List<ExpenseWithCategory> expensesWithCategories =
         await getExpensesWithCategories();
+    final List<Category> categories = await getCategories(null);
     setState(() {
       _expenses = expensesWithCategories;
+      _categories = categories;
       _isLoading = false;
     });
   }
@@ -124,7 +133,15 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  void _handleDelete(int id) async {
+  void _editCategory(Category category) {
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) =>
+                CategoryForm(onSubmit: loadData, categoryToEdit: category)));
+  }
+
+  void _handleDeleteExpense(int id) async {
     final db = await openDatabase();
     await db.delete('expenses', where: 'id = ?', whereArgs: [id]);
     setState(() {
@@ -132,118 +149,122 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  void _handleDeleteCategory(int id) async {
+    final db = await openDatabase();
+    await db.delete('categories', where: 'id = ?', whereArgs: [id]);
+    setState(() {
+      _categories.removeWhere((category) => category.id == id);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
-        appBar: AppBar(
-          // TRY THIS: Try changing the color here to a specific color (to
-          // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-          // change color while the other colors stay the same.
-          backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-          // Here we take the value from the MyHomePage object that was created by
-          // the App.build method, and use it to set our appbar title.
-          title: Text(widget.title),
-          actions: <Widget>[
-            PopupMenuButton<MenuOption>(
-              onSelected: (menuOption) =>
-                  onSelectedMenuOption(menuOption, loadData),
-              itemBuilder: (BuildContext context) =>
-                  <PopupMenuEntry<MenuOption>>[
-                const PopupMenuItem<MenuOption>(
-                  value: MenuOption.exportData,
-                  child: Text("Export Data"),
-                ),
-                const PopupMenuItem<MenuOption>(
-                  value: MenuOption.importData,
-                  child: Text("Import Data"),
-                ),
-              ],
-            ),
-          ],
-          bottom: const TabBar(
-            tabs: [
-              Tab(icon: Icon(Icons.bar_chart)),
-              Tab(icon: Icon(Icons.attach_money)),
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        title: Text(widget.title),
+        actions: <Widget>[
+          PopupMenuButton<MenuOption>(
+            onSelected: (menuOption) =>
+                onSelectedMenuOption(menuOption, loadData),
+            itemBuilder: (BuildContext context) => <PopupMenuEntry<MenuOption>>[
+              const PopupMenuItem<MenuOption>(
+                value: MenuOption.exportData,
+                child: Text("Export Data"),
+              ),
+              const PopupMenuItem<MenuOption>(
+                value: MenuOption.importData,
+                child: Text("Import Data"),
+              ),
             ],
           ),
+        ],
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(icon: Icon(Icons.bar_chart)),
+            Tab(icon: Icon(Icons.attach_money)),
+            Tab(icon: Icon(Icons.category)),
+          ],
         ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: () {
-            setState(() {
-              showingAdditionalActionButtons = !showingAdditionalActionButtons;
-            });
-          },
-          tooltip: 'Increment',
-          child: showingAdditionalActionButtons
-              ? const Icon(Icons.close)
-              : const Icon(Icons.add),
-        ), // This trailing comma makes auto-formatting nicer for build methods.
-        body: Stack(children: [
-          TabBarView(
-            children: [
-              Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(64.0),
-                  child: PieChartView(
-                    expenses: _expenses,
-                    isLoading: _isLoading,
-                  ),
-                ),
-              ),
-              Center(
-                child: ExpensesListView(
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          setState(() {
+            showingAdditionalActionButtons = !showingAdditionalActionButtons;
+          });
+        },
+        tooltip: 'Add',
+        child: showingAdditionalActionButtons
+            ? const Icon(Icons.close)
+            : const Icon(Icons.add),
+      ),
+      body: Stack(children: [
+        TabBarView(
+          controller: _tabController,
+          children: [
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(64.0),
+                child: PieChartView(
                   expenses: _expenses,
                   isLoading: _isLoading,
-                  onDelete: _handleDelete,
-                  onEdit: _editExpense,
                 ),
               ),
-            ],
-          ),
-          Positioned(
-            bottom: 80.0,
-            right: 16.0,
-            child: AnimatedOpacity(
-              opacity: showingAdditionalActionButtons ? 1.0 : 0.0,
-              duration: const Duration(milliseconds: 200),
-              child: Column(
-                children: [
-                  FloatingActionButton(
-                      onPressed: () {
-                        setState(() {
-                          showingAdditionalActionButtons = false;
-                          _addCategory();
-                        });
-                      },
-                      heroTag: null,
-                      mini: true,
-                      child: const Icon(Icons.add_chart)),
-                  const SizedBox(height: 2.0),
-                  FloatingActionButton(
+            ),
+            Center(
+              child: ExpensesListView(
+                expenses: _expenses,
+                isLoading: _isLoading,
+                onDelete: _handleDeleteExpense,
+                onEdit: _editExpense,
+              ),
+            ),
+            Center(
+              child: CategoriesListView(
+                categories: _categories,
+                isLoading: _isLoading,
+                onDelete: _handleDeleteCategory,
+                onEdit: _editCategory,
+              ),
+            ),
+          ],
+        ),
+        Positioned(
+          bottom: 80.0,
+          right: 16.0,
+          child: AnimatedOpacity(
+            opacity: showingAdditionalActionButtons ? 1.0 : 0.0,
+            duration: const Duration(milliseconds: 200),
+            child: Column(
+              children: [
+                FloatingActionButton(
                     onPressed: () {
                       setState(() {
                         showingAdditionalActionButtons = false;
+                        _addCategory();
                       });
-                      _addExpense();
                     },
                     heroTag: null,
                     mini: true,
-                    child: const Icon(Icons.money),
-                  )
-                ],
-              ),
+                    child: const Icon(Icons.add_chart)),
+                const SizedBox(height: 2.0),
+                FloatingActionButton(
+                  onPressed: () {
+                    setState(() {
+                      showingAdditionalActionButtons = false;
+                    });
+                    _addExpense();
+                  },
+                  heroTag: null,
+                  mini: true,
+                  child: const Icon(Icons.money),
+                )
+              ],
             ),
           ),
-        ]),
-      ),
+        ),
+      ]),
     );
   }
 }
