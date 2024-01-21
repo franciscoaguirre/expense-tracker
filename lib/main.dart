@@ -7,6 +7,7 @@ import 'expense.dart';
 import 'expense_with_category.dart';
 import 'pie_chart.dart';
 import 'csv_utils.dart';
+import 'category_form.dart';
 
 void main() {
   runApp(const MyApp());
@@ -79,6 +80,7 @@ void onSelectedMenuOption(MenuOption option, Function() callback) async {
 class _MyHomePageState extends State<MyHomePage> {
   List<ExpenseWithCategory> _expenses = [];
   bool _isLoading = false;
+  bool showingAdditionalActionButtons = false;
 
   @override
   void initState() {
@@ -104,6 +106,13 @@ class _MyHomePageState extends State<MyHomePage> {
       MaterialPageRoute(
           builder: (context) => DataInputForm(onSubmit: loadData)),
     );
+  }
+
+  void _addCategory() {
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) => CategoryForm(onSubmit: loadData)));
   }
 
   void _editExpense(Expense expense) {
@@ -167,31 +176,73 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
         ),
         floatingActionButton: FloatingActionButton(
-          onPressed: _addExpense,
+          onPressed: () {
+            setState(() {
+              showingAdditionalActionButtons = !showingAdditionalActionButtons;
+            });
+          },
           tooltip: 'Increment',
-          child: const Icon(Icons.add),
+          child: showingAdditionalActionButtons
+              ? const Icon(Icons.close)
+              : const Icon(Icons.add),
         ), // This trailing comma makes auto-formatting nicer for build methods.
-        body: TabBarView(
-          children: [
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.all(64.0),
-                child: PieChartView(
-                  expenses: _expenses,
-                  isLoading: _isLoading,
+        body: Stack(children: [
+          TabBarView(
+            children: [
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(64.0),
+                  child: PieChartView(
+                    expenses: _expenses,
+                    isLoading: _isLoading,
+                  ),
                 ),
               ),
-            ),
-            Center(
-              child: ExpensesListView(
-                expenses: _expenses,
-                isLoading: _isLoading,
-                onDelete: _handleDelete,
-                onEdit: _editExpense,
+              Center(
+                child: ExpensesListView(
+                  expenses: _expenses,
+                  isLoading: _isLoading,
+                  onDelete: _handleDelete,
+                  onEdit: _editExpense,
+                ),
+              ),
+            ],
+          ),
+          Positioned(
+            bottom: 80.0,
+            right: 16.0,
+            child: AnimatedOpacity(
+              opacity: showingAdditionalActionButtons ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 200),
+              child: Column(
+                children: [
+                  FloatingActionButton(
+                      onPressed: () {
+                        setState(() {
+                          showingAdditionalActionButtons = false;
+                          _addCategory();
+                        });
+                      },
+                      heroTag: null,
+                      mini: true,
+                      child: const Icon(Icons.add_chart)),
+                  const SizedBox(height: 2.0),
+                  FloatingActionButton(
+                    onPressed: () {
+                      setState(() {
+                        showingAdditionalActionButtons = false;
+                      });
+                      _addExpense();
+                    },
+                    heroTag: null,
+                    mini: true,
+                    child: const Icon(Icons.money),
+                  )
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ]),
       ),
     );
   }
