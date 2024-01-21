@@ -90,6 +90,7 @@ class _MyHomePageState extends State<MyHomePage>
   final ScrollController _scrollController = ScrollController();
   late sqflite.Database db;
   int _expensesOffset = 0;
+  double _totalSpent = 0.0;
 
   @override
   void initState() {
@@ -116,12 +117,14 @@ class _MyHomePageState extends State<MyHomePage>
       _isLoading = true;
     });
 
+    final double totalSpent = await getTotalSpent(db, null);
     final List<ExpenseWithCategory> expensesWithCategories =
         await getExpensesWithCategories(db, _expensesOffset);
     final List<Category> categories = await getCategories(db);
     setState(() {
       _expenses = expensesWithCategories;
       _categories = categories;
+      _totalSpent = totalSpent;
       _isLoading = false;
     });
   }
@@ -237,10 +240,8 @@ class _MyHomePageState extends State<MyHomePage>
           controller: _tabController,
           children: [
             ListView(controller: _scrollController, children: [
-              PieChartView(
-                expenses: _expenses,
-                isLoading: _isLoading,
-              ),
+              const PieChartView(),
+              Center(child: Text("Total: $_totalSpent")),
               ExpensesListView(
                 expenses: _expenses,
                 isLoading: _isLoading,

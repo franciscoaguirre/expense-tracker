@@ -39,6 +39,21 @@ Future<List<ExpenseWithCategory>> getAllExpensesWithCategories(
   return results.map((map) => ExpenseWithCategory.fromMap(map)).toList();
 }
 
+Future<double> getTotalSpent(sqflite.Database? db, int? categoryId) async {
+  final actualDb = db ?? await openDatabase();
+  final result = categoryId == null
+      ? await actualDb.rawQuery("SELECT SUM(amount) AS total FROM expenses")
+      : await actualDb.rawQuery('''
+    SELECT SUM(amount) AS total
+    FROM expenses
+    WHERE category_id = ?
+  ''', [categoryId]);
+  double totalAmount = (result.isNotEmpty)
+      ? (result[0]['total'] as num?)?.toDouble() ?? 0.0
+      : 0.0;
+  return totalAmount;
+}
+
 class ExpenseWithCategory {
   final int id;
   final DateTime date;
