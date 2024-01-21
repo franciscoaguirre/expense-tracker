@@ -7,7 +7,7 @@ Future<List<ExpenseWithCategory>> getExpensesWithCategories() async {
     SELECT expenses.*, categories.name AS categoryName, categories.color AS categoryColor
     FROM expenses
     INNER JOIN categories ON expenses.category_id = categories.id
-    ORDER BY -expenses.date
+    ORDER BY expenses.date DESC
   ''');
 
   return results.map((map) => ExpenseWithCategory.fromMap(map)).toList();
