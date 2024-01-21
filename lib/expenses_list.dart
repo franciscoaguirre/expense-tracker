@@ -29,6 +29,8 @@ class ExpensesListView extends StatelessWidget {
     }
 
     return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
       itemCount: expenses.length,
       itemBuilder: (context, index) {
         return ExpenseCard(

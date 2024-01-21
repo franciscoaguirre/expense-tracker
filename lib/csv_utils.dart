@@ -9,7 +9,7 @@ import 'expense_with_category.dart';
 import 'utils.dart';
 
 Future<void> exportExpensesToCSV() async {
-  List<ExpenseWithCategory> expenses = await getExpensesWithCategories();
+  List<ExpenseWithCategory> expenses = await getAllExpensesWithCategories(null);
 
   List<List<dynamic>> rows = [];
   rows.add(["ID", "Name", "Category", "Amount", "Date"]); // Example columns

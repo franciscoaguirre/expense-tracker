@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sqflite/sqflite.dart' as sqflite;
 
 import 'database.dart';
 import 'data_input_form.dart';
@@ -86,27 +87,44 @@ class _MyHomePageState extends State<MyHomePage>
   bool _isLoading = false;
   bool showingAdditionalActionButtons = false;
   late TabController _tabController;
+  final ScrollController _scrollController = ScrollController();
+  late sqflite.Database db;
+  int _expensesOffset = 0;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(vsync: this, length: 3);
+    _tabController = TabController(vsync: this, length: 2);
+    _scrollController.addListener(_scrollListener);
+    _initDatabase();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    db.close();
+    super.dispose();
+  }
+
+  _initDatabase() async {
+    db = await openDatabase();
     loadData();
   }
 
-  void loadData() async {
+  loadData() async {
     setState(() {
       _isLoading = true;
     });
 
     final List<ExpenseWithCategory> expensesWithCategories =
-        await getExpensesWithCategories();
-    final List<Category> categories = await getCategories(null);
+        await getExpensesWithCategories(db, _expensesOffset);
+    final List<Category> categories = await getCategories(db);
     setState(() {
       _expenses = expensesWithCategories;
       _categories = categories;
       _isLoading = false;
     });
+    print(_expenses.length);
   }
 
   void _addExpense() {
@@ -157,6 +175,23 @@ class _MyHomePageState extends State<MyHomePage>
     });
   }
 
+  void _scrollListener() {
+    if (_scrollController.position.pixels ==
+        _scrollController.position.maxScrollExtent) {
+      _fetchMoreExpenses();
+    }
+  }
+
+  _fetchMoreExpenses() async {
+    _expensesOffset += 20;
+    final List<ExpenseWithCategory> nextPage =
+        await getExpensesWithCategories(db, _expensesOffset);
+    setState(() {
+      _expenses = _expenses + nextPage;
+      _isLoading = false; // Still need to show the loading in the right place
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -183,7 +218,6 @@ class _MyHomePageState extends State<MyHomePage>
           controller: _tabController,
           tabs: const [
             Tab(icon: Icon(Icons.bar_chart)),
-            Tab(icon: Icon(Icons.attach_money)),
             Tab(icon: Icon(Icons.category)),
           ],
         ),
@@ -203,23 +237,18 @@ class _MyHomePageState extends State<MyHomePage>
         TabBarView(
           controller: _tabController,
           children: [
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.all(64.0),
-                child: PieChartView(
-                  expenses: _expenses,
-                  isLoading: _isLoading,
-                ),
+            ListView(controller: _scrollController, children: [
+              PieChartView(
+                expenses: _expenses,
+                isLoading: _isLoading,
               ),
-            ),
-            Center(
-              child: ExpensesListView(
+              ExpensesListView(
                 expenses: _expenses,
                 isLoading: _isLoading,
                 onDelete: _handleDeleteExpense,
                 onEdit: _editExpense,
-              ),
-            ),
+              )
+            ]),
             Center(
               child: CategoriesListView(
                 categories: _categories,

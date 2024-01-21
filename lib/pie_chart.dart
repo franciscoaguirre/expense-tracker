@@ -29,20 +29,24 @@ class PieChartView extends StatelessWidget {
       );
     }
 
-    return PieChart(
-      PieChartData(
-        sections: amountPerCategory
-            .map((categoryName, category) => MapEntry(
-                categoryName,
-                PieChartSectionData(
-                  value: category.amount,
-                  title: categoryName,
-                  color: Color(category.color),
-                )))
-            .values
-            .toList(),
-      ),
-    );
+    return SizedBox(
+        height: 400.0,
+        child: Padding(
+            padding: const EdgeInsets.all(64.0),
+            child: PieChart(
+              PieChartData(
+                sections: amountPerCategory
+                    .map((categoryName, category) => MapEntry(
+                        categoryName,
+                        PieChartSectionData(
+                          value: category.amount,
+                          title: categoryName,
+                          color: Color(category.color),
+                        )))
+                    .values
+                    .toList(),
+              ),
+            )));
   }
 }
 

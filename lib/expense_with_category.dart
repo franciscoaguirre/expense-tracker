@@ -1,9 +1,35 @@
+import 'package:sqflite/sqflite.dart' as sqflite;
+
 import 'database.dart';
 
-Future<List<ExpenseWithCategory>> getExpensesWithCategories() async {
+/// Gets expenses with an offset and a fixed limit of 20.
+/// Meant for rendering in lists.
+Future<List<ExpenseWithCategory>> getExpensesWithCategories(
+  sqflite.Database? db,
+  int offset,
+) async {
+  final actualDb = db ?? await openDatabase();
   // Your database fetching logic
-  final db = await openDatabase();
-  final List<Map<String, dynamic>> results = await db.rawQuery('''
+  final List<Map<String, dynamic>> results = await actualDb.rawQuery('''
+    SELECT expenses.*, categories.name AS categoryName, categories.color AS categoryColor
+    FROM expenses
+    INNER JOIN categories ON expenses.category_id = categories.id
+    ORDER BY expenses.date DESC
+    LIMIT 20
+    OFFSET ?
+  ''', [offset]);
+
+  return results.map((map) => ExpenseWithCategory.fromMap(map)).toList();
+}
+
+/// Gets all expenses, no limit.
+/// Meant for exporting.
+Future<List<ExpenseWithCategory>> getAllExpensesWithCategories(
+  sqflite.Database? db,
+) async {
+  final actualDb = db ?? await openDatabase();
+  // Your database fetching logic
+  final List<Map<String, dynamic>> results = await actualDb.rawQuery('''
     SELECT expenses.*, categories.name AS categoryName, categories.color AS categoryColor
     FROM expenses
     INNER JOIN categories ON expenses.category_id = categories.id
