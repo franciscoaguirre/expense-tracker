@@ -124,7 +124,6 @@ class _MyHomePageState extends State<MyHomePage>
       _categories = categories;
       _isLoading = false;
     });
-    print(_expenses.length);
   }
 
   void _addExpense() {
